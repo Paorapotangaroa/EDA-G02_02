@@ -115,6 +115,15 @@ results_df <- results_df %>%
 results_df$df <- NULL
 results_df
 
+# Filtering out the data to get down to a reasonable amount of columns
+results_df %>%
+  arrange(p.value) %>%
+  filter(!(statistic >= 1100 & statistic <= 1200)) %>%
+  filter(p.value <= 0.05) %>% 
+  print(n=100)
+
+
+
 # 11. Individual Variable Analysis (Confusin Matrix and Graphs)
 
     # Enter variable where GET_TASKS is
