@@ -180,6 +180,10 @@ cleaned_cat_data_final <- cleaned_cat_data %>%
 cleaned_cat_data_final %>% 
   glimpse()
 
+    #Order the variables according to p score on the chi square test
+results_cleaned_2 %>% 
+  arrange(p.value)
+
 
 
 
