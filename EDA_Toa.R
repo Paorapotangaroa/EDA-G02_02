@@ -119,6 +119,9 @@ ind_data %>%
   arrange(count_1) %>% 
   print(n = 100)
 
+
+
+
 #We can also see there are some variables with a lot of values of 1
 
 ind_data %>% 
@@ -129,13 +132,27 @@ ind_data %>%
   arrange(desc(count_1)) %>% 
   print(n = 20)
 
+#Below is a graph showing the density of the distributions of the counts of 1
+# across all the columns. As you can see, it is very skewed and most columns
+# contain a low amount of 1's
+ind_data %>% 
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>% 
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1)) %>% 
+  ggplot(aes(x = count_1))+
+  geom_density(fill = 'blue')+
+  theme_bw()+
+  labs(title = "Density of the counts of 1 across varaibles",
+      x = "Counts of 1's")
+
 #We then can compare a particular variable against the label (dependent) variable
 #to see the counts of 0's and 1's for both. The table below show
 #when the label is 0 or 1, how many times a particular independent variable is 0 and 1.
 #*** We are using GET_TASKS as the independent variable here but it can be switched with anything
 
 ind_data %>%
-  group_by(Label, GET_TASKS) %>%
+  group_by(Label, KILL_BACKGROUND_PROCESSES) %>%
   summarise(count = n())
 
 
@@ -143,7 +160,7 @@ ind_data %>%
 #the x axis and the fill as the Label
 ind_data %>% 
   mutate(across(everything(),factor)) %>% 
-ggplot(aes(x = GET_TASKS, fill = Label)) + 
+ggplot(aes(x = KILL_BACKGROUND_PROCESSES, fill = Label)) + 
   geom_bar(position = "fill")+
   labs(title = "Relationship between Variable and Malware Label")
 
