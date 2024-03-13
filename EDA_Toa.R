@@ -152,7 +152,7 @@ ind_data %>%
 #*** We are using GET_TASKS as the independent variable here but it can be switched with anything
 
 ind_data %>%
-  group_by(Label, KILL_BACKGROUND_PROCESSES) %>%
+  group_by(Label, GET_TASKS) %>%
   summarise(count = n())
 
 
@@ -160,7 +160,7 @@ ind_data %>%
 #the x axis and the fill as the Label
 ind_data %>% 
   mutate(across(everything(),factor)) %>% 
-ggplot(aes(x = KILL_BACKGROUND_PROCESSES, fill = Label)) + 
+ggplot(aes(x = GET_TASKS, fill = Label)) + 
   geom_bar(position = "fill")+
   labs(title = "Relationship between Variable and Malware Label")
 
@@ -242,7 +242,7 @@ ind_data %>%
 #we haven't done Chi Square testing at all so we had to look some stuff up
 
 #This is a package we had to install
-install.packages("purrr")
+#install.packages("purrr")
 library(purrr)
 
 #We we first tried to make the tibble it got mad that we had variables with only
@@ -280,6 +280,7 @@ results_summary <- map(chi_square_results, ~list(p_value = .x$p.value, statistic
 # we looked up how to do this and how to use the command map_df
 chi_square_tibble <- map_df(results_summary, bind_rows, .id = "column")
 
+chi_square_tibble
 
 #We did a little exploring of the variables with the p values.
 chi_square_tibble %>% 
@@ -296,7 +297,7 @@ chi_square_tibble %>%
   mutate(avg_p_value = mean(p_value),
          avg_statistic = mean(statistic))
 
-#Now we are l0oking at the average p value for each category and arranging them by
+#Now we are looking at the average p value for each category and arranging them by
 #p value
 chi_square_tibble %>% 
   mutate(category = str_extract(column, "^[^_/]+")) %>% 
