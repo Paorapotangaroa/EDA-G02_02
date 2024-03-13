@@ -84,125 +84,224 @@ stacked_area_chart <- ggplot(binary_data, aes(x = seq_along(variable), fill = fa
        y = "Count")
 
 
-# 10. Chi Square Test Tibble w/ Categorical Data ALL DATA
-
-    # Converting the data to categorical
-cat_data <- data.frame(lapply(my_data, as.factor))
-cat_data <- cat_data[-1, ]
-
-    #Chi Square Test
-    # Prepare a vector of variable names, excluding 'Label'
-variable_names <- names(cat_data)[!names(cat_data) %in% "Label"]
-
-    # Initialize an empty list to store the results
-results_list <- list()
-
-    # Loop through each variable to perform the Chi-squared test
-for(var_name in variable_names) {
-  # Perform the Chi-squared test
-  test_result <- chisq.test(table(cat_data[[var_name]], cat_data$Label))
-  
-  # Store the results with the variable name
-  results_list[[var_name]] <- broom::tidy(test_result) %>%
-    mutate(variable = var_name)
-}
-
-    # Combine the results into a single dataframe
-results_df <- bind_rows(results_list, .id = "variable")
-
-    # Correcting the issue by ensuring variable names are included
-results_df <- results_df %>%
-  select(variable, statistic = statistic, p.value = p.value, df = parameter)
-
-results_df
-
-
-
-# 10.5. Chi Square Test Tibble w/ Categorical Data CLEAN
-
-    #This whole section is finding the variables that have less than 100 counts of '1'
-    #and then getting the variable names then removing them from the data set
-    #and saving them to a data set called cleaned_cat_data
-counts_of_ones <- cat_data %>%
-  summarise(across(everything(), ~sum(.x == 1, na.rm = TRUE))) %>%
-  pivot_longer(cols = everything(), names_to = "variable", values_to = "count_of_ones")
-
-columns_less_than_hundres_ones <- counts_of_ones %>% 
-  filter(count_of_ones < 100) %>% 
-  mutate(count_of_ones = NULL)
-
-columns_to_drop <- columns_less_than_hundres_ones[[1]]
-
-cleaned_cat_data <- cat_data %>% 
-  select(-all_of(columns_to_drop))
-
-cleaned_cat_data %>% 
-  glimpse()
-
-
-    #This section does the same as above, tests all the chi squared for the new data set
-    #then filters them to have a p value of 0.05 or less
-# Prepare a vector of variable names, excluding 'Label'
-variable_names_2 <- names(cleaned_cat_data)[!names(cleaned_cat_data) %in% "Label"]
-
-# Initialize an empty list to store the results
-results_list_2 <- list()
-
-# Loop through each variable to perform the Chi-squared test
-for(var_name in variable_names_2) {
-  # Perform the Chi-squared test
-  test_result_2 <- chisq.test(table(cleaned_cat_data[[var_name]], cleaned_cat_data$Label))
-  
-  # Store the results with the variable name
-  results_list_2[[var_name]] <- broom::tidy(test_result_2) %>%
-    mutate(variable_2 = var_name)
-}
-
-# Combine the results into a single dataframe
-results_df_2 <- bind_rows(results_list_2, .id = "variable")
-
-# Correcting the issue by ensuring variable names are included
-results_df_2 <- results_df_2 %>%
-  select(variable_2, statistic = statistic, p.value = p.value, df = parameter)
-
-results_df_2$df <- NULL
-results_cleaned_2 <- results_df_2 %>%
-  filter(p.value <= 0.05)
-
-#Getting these names and then dropping all the columns not with these named
-#to the cleaned data set
-
-columns_to_keep <- results_cleaned_2[[1]]
-cleaned_cat_data_final <- cleaned_cat_data %>%
-  select(all_of(columns_to_keep), Label)
-
-
-cleaned_cat_data_final %>% 
-  glimpse()
-
-    #Order the variables according to p score on the chi square test
-results_cleaned_2 %>% 
-  arrange(p.value)
 
 
 
 
 
-# 11. Individual Variable Analysis (Confusion Matrix and Graphs)
+# Independent Variable Analysis
 
-    # Enter variable where GET_TASKS is
-cat_data %>%
+                                  # FIRST LOOK
+
+#The first row is all NA's so we are gonna remvoe that
+ind_data <- my_data %>% 
+  slice(-1)
+
+#First a look at the number of columns in the data
+ind_data %>% 
+  ncol()
+
+#Every column has either the value 0 or 1 so now we looked at the count of each
+# for every variable
+ind_data %>% 
+pivot_longer(cols = everything()) %>%
+  group_by(name) %>% 
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1))
+
+#We can see that there are a lot of variables with none or very little 
+# values of 1
+ind_data %>% 
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>% 
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1)) %>% 
+  arrange(count_1) %>% 
+  print(n = 100)
+
+#We can also see there are some variables with a lot of values of 1
+
+ind_data %>% 
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>% 
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1)) %>% 
+  arrange(desc(count_1)) %>% 
+  print(n = 20)
+
+#We then can compare a particular variable against the label (dependent) variable
+#to see the counts of 0's and 1's for both. The table below show
+#when the label is 0 or 1, how many times a particular independent variable is 0 and 1.
+#*** We are using GET_TASKS as the independent variable here but it can be switched with anything
+
+ind_data %>%
   group_by(Label, GET_TASKS) %>%
-  summarise(Count = n(), .groups = "drop") %>%
-  # Calculate the total count for each Label category
-  group_by(Label) %>%
-  # Add a new column for percentage
-  mutate(Total = sum(Count),
-         Percentage = (Count / Total) * 100)
+  summarise(count = n())
 
-ggplot(cat_data, aes(x = GET_TASKS, fill = Label)) + 
+
+#The graph below shows the same numbers as the table above but with the dependent variable along
+#the x axis and the fill as the Label
+ind_data %>% 
+  mutate(across(everything(),factor)) %>% 
+ggplot(aes(x = GET_TASKS, fill = Label)) + 
   geom_bar(position = "fill")+
   labs(title = "Relationship between Variable and Malware Label")
+
+
+
+                              # GROUPING EXPLORATION
+
+# We noticed a lot of the independent variables has a system event as the first word in their name
+#For example ACCESS or WRITE or READ. We decided to see how many variables had the same system flag
+#name in the tibble below. Note we looked up regular expressions to pull the first word from the 
+#variable names
+
+
+ind_data %>% 
+  pivot_longer(cols = everything()) %>%
+  distinct(name) %>% 
+  mutate(category = str_extract(name, "^[^_/]+")) %>% 
+  group_by(category) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  print(n = 100)
+
+#Now we wanted to see a similiar thing above but with the groupings. We want to see the count
+#of 0's per groupd, the count of 1's per group, the total count per group, and the 
+#percent of 1's per group. The first tibble is that infor for the label as reference.
+# The second tibble is the groupings but arranged by highest percentage of 1 values
+
+ind_data %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(category = str_extract(name, "^[^_/]+")) %>% 
+  group_by(category) %>%
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1),
+            total = (count_0 + count_1)) %>%
+  mutate(percent_of_1 = (count_1)/(total)) %>% 
+  filter(category == 'Label')
+
+ind_data %>%
+  pivot_longer(cols = everything()) %>% 
+  mutate(category = str_extract(name, "^[^_/]+")) %>% 
+  group_by(category) %>%
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1),
+            total = (count_0 + count_1)) %>%
+  mutate(percent_of_1 = (count_1)/(total)) %>% 
+  arrange(desc(percent_of_1))
+
+
+#Last part of this grouping independent variables is a graphically look of what we
+# did above. Since there are so many variables, we filtered out the variables that
+# have a percent of 1 below 20%. What we are left with are groupings of variables
+# that have a good amount of 1's as their values that we could be potentially
+# use for modeling
+
+ind_data %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(category = str_extract(name, "^[^_/]+")) %>% 
+  group_by(category) %>%
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1)) %>%
+  mutate(percent_of_1 = (count_1)/(count_1+count_0)) %>% 
+  filter(percent_of_1 >= 0.2) %>% 
+  ggplot(aes(x = category, y = percent_of_1, fill = category))+
+  geom_bar(stat = "identity")+
+  facet_wrap(~category)+
+  theme_bw()+
+  theme(legend.position = "none")
+#Note we looked up this function to get rid of the legend because
+#it was annoying and in the way
+
+
+
+
+
+                         # CHI SQUARE TESTING
+
+#The last part of the independent variable analysis we did was Chi Square testing
+#for all the independent variables. We will walk through each step but please note that
+#we havne't done Chi Sqaure testing at all so we had to look some stuff up
+
+#This is a package we had to install
+install.packages("purrr")
+library(purrr)
+
+#We we first tried to make the tibble it got mad that we had variables with only
+#one value (0) so we had to drop all of the columns that only had a single value in
+#them.
+
+#First we pivoted the data and got the column names that had no counts of 1
+#as a value. We saved those columns names out to a tibble named tibble_with_columns_to_drop
+tibble_with_columns_to_drop <- ind_data %>% 
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>% 
+  summarise(count_0 = sum(value == 0),
+            count_1 = sum(value == 1)) %>% 
+  filter(count_1 == 0) %>% 
+  select(name)
+
+#Then we grabbed just the names from the tibble and saved those to a vector
+columns_to_drop <- tibble_with_columns_to_drop[[1]]
+
+#Then we used the names in the vector to drop all those columns in our dataset. We then
+#converted the columns to factors. Then we selected everything but the Label to use
+#for the chi square test. Then we had to look up how to do a chi square test and we
+#passed in the data to do that
+chi_square_results <- ind_data %>% 
+  select(!all_of(columns_to_drop)) %>% 
+  mutate(across(everything(), factor)) %>% 
+  select(!Label) %>%
+  map(~chisq.test(ind_data[["Label"]], .x))
+
+#Then we saved out the p values from the test and created a vector with the 
+#names of the columns and the p values.
+p_values <- map_dbl(chi_square_results, ~.x$p.value)
+p_values_named <- setNames(p_values, names(chi_square_results))
+
+#Finally we converted the vector of names and values into a tibble so it's
+#easier to read
+chi_square_tibble <- tibble(
+  column = names(p_values_named),
+  p_value = p_values_named
+)
+
+
+#We did a little exploring of the variables with the p values.
+chi_square_tibble %>% 
+  arrange(p_value)
+
+chi_square_tibble %>% 
+  arrange(desc(p_value))
+
+#Here we are grouping the variables like we did above but with a p-value. We are also
+#computing the average p value based on category
+chi_square_tibble %>% 
+  mutate(category = str_extract(column, "^[^_/]+")) %>% 
+  group_by(category) %>% 
+  mutate(avg_p_value = mean(p_value))
+
+#Now we are l0oking at the average p value for each category and arranging them by
+#p value
+chi_square_tibble %>% 
+  mutate(category = str_extract(column, "^[^_/]+")) %>% 
+  group_by(category) %>% 
+  mutate(avg_p_value = mean(p_value)) %>% 
+  group_by(category) %>% 
+  summarise(avg_p_value = first(avg_p_value))
+
+#It's interesting to note the similar categories here that have a large amount of
+#1's as values that we found before, such as the KILL and WAKE categories
+chi_square_tibble %>% 
+  mutate(category = str_extract(column, "^[^_/]+")) %>% 
+  group_by(category) %>% 
+  mutate(avg_p_value = mean(p_value)) %>% 
+  group_by(category) %>% 
+  summarise(avg_p_value = first(avg_p_value)) %>% 
+  arrange(avg_p_value)
+  
+
 
 
 
