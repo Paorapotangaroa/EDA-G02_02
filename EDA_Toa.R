@@ -93,7 +93,7 @@ stacked_area_chart <- ggplot(binary_data, aes(x = seq_along(variable), fill = fa
 
                                   # FIRST LOOK
 
-#The first row is all NA's so we are gonna remvoe that
+#The first row is all NA's so we are gonna remove that
 ind_data <- my_data %>% 
   slice(-1)
 
@@ -222,7 +222,7 @@ ind_data %>%
 
 #The last part of the independent variable analysis we did was Chi Square testing
 #for all the independent variables. We will walk through each step but please note that
-#we havne't done Chi Sqaure testing at all so we had to look some stuff up
+#we haven't done Chi Square testing at all so we had to look some stuff up
 
 #This is a package we had to install
 install.packages("purrr")
@@ -255,17 +255,13 @@ chi_square_results <- ind_data %>%
   select(!Label) %>%
   map(~chisq.test(ind_data[["Label"]], .x))
 
-#Then we saved out the p values from the test and created a vector with the 
-#names of the columns and the p values.
-p_values <- map_dbl(chi_square_results, ~.x$p.value)
-p_values_named <- setNames(p_values, names(chi_square_results))
+#We now take the p value and statistic from the chi square test and map it to 
+#results_summary. Like I said before, we had to look up how to do this
+results_summary <- map(chi_square_results, ~list(p_value = .x$p.value, statistic = .x$statistic))
 
-#Finally we converted the vector of names and values into a tibble so it's
-#easier to read
-chi_square_tibble <- tibble(
-  column = names(p_values_named),
-  p_value = p_values_named
-)
+# We then converted the results_summary into a tibble to read easier. Again,
+# we looked up how to do this and how to use the command map_df
+chi_square_tibble <- map_df(results_summary, bind_rows, .id = "column")
 
 
 #We did a little exploring of the variables with the p values.
@@ -280,25 +276,30 @@ chi_square_tibble %>%
 chi_square_tibble %>% 
   mutate(category = str_extract(column, "^[^_/]+")) %>% 
   group_by(category) %>% 
-  mutate(avg_p_value = mean(p_value))
+  mutate(avg_p_value = mean(p_value),
+         avg_statistic = mean(statistic))
 
 #Now we are l0oking at the average p value for each category and arranging them by
 #p value
 chi_square_tibble %>% 
   mutate(category = str_extract(column, "^[^_/]+")) %>% 
   group_by(category) %>% 
-  mutate(avg_p_value = mean(p_value)) %>% 
+  mutate(avg_p_value = mean(p_value),
+         avg_statistic = mean(statistic)) %>% 
   group_by(category) %>% 
-  summarise(avg_p_value = first(avg_p_value))
+  summarise(avg_p_value = first(avg_p_value),
+            avg_statistic = first(avg_statistic))
 
 #It's interesting to note the similar categories here that have a large amount of
 #1's as values that we found before, such as the KILL and WAKE categories
 chi_square_tibble %>% 
   mutate(category = str_extract(column, "^[^_/]+")) %>% 
   group_by(category) %>% 
-  mutate(avg_p_value = mean(p_value)) %>% 
+  mutate(avg_p_value = mean(p_value),
+         avg_statistic = mean(statistic)) %>% 
   group_by(category) %>% 
-  summarise(avg_p_value = first(avg_p_value)) %>% 
+  summarise(avg_p_value = first(avg_p_value),
+            avg_statistic = first(avg_statistic)) %>% 
   arrange(avg_p_value)
   
 
