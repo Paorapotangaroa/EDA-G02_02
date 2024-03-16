@@ -1,91 +1,46 @@
+# Names: Bruyn Decker, Lillie Heath, Riley Marshall, Toa Pita
+# Sections: 2, 3, 1, 2
+# Description: This is our analysis file for the security dataset
+
+# Bring in libraries
+
+# These are pretty standard
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
+
+
+# Bring in the data
 my_data <- read_csv("https://www.dropbox.com/scl/fi/p7qg5yosglzczlwv6697m/17_train.csv?rlkey=qsw29qqhe9dy2lnfzv2jv3g7t&dl=1")
 
+# Show that there is only one missing value. A look at the data shows the first row is null all the way across.
 my_data %>% group_by(Label) %>% count()
 
+# Drop the null row
+my_data <- my_data %>% slice_tail(n=-1)
 
-# Load necessary libraries
-library(tidyverse)
+# Make sure that ggplot treats the label as categorical (I wrote this code was before I know about factors)
+graph_data <- my_data %>% mutate(Label = as.character(Label))
 
-binary_data <- my_data
-variable <- "Label"
-# Generate sample binary data
+# Plot the distribution of the data. It is a categorical label so we can't do much more than a count. 
+# Measures of center, spread, etc. only apply to numeric columns
 
-
-# 1. Bar Chart
-bar_chart <- ggplot(binary_data, aes(x = factor(variable))) +
-  geom_bar() +
-  labs(title = "Bar Chart of Binary Variable",
-       x = "Variable",
-       y = "Count")
-
-# 2. Pie Chart
-pie_chart <- ggplot(binary_data, aes(x = factor(variable))) +
-  geom_bar(width = 1) +
-  coord_polar(theta = "y") +
-  labs(title = "Pie Chart of Binary Variable",
-       x = "Variable",
-       y = "")
-
-# 3. Histogram
-histogram <- ggplot(binary_data, aes(x = factor(variable))) +
-  geom_bar() +
-  labs(title = "Histogram of Binary Variable",
-       x = "Variable",
-       y = "Count")
-
-# 4. Area Chart
-area_chart <- ggplot(binary_data, aes(x = seq_along(variable), fill = factor(variable))) +
-  geom_area() +
-  labs(title = "Area Chart of Binary Variable",
-       x = "Index",
-       y = "Count")
-
-# 5. Stacked Bar Chart
-stacked_bar_chart <- ggplot(binary_data, aes(x = factor(variable), fill = factor(variable))) +
-  geom_bar() +
-  labs(title = "Stacked Bar Chart of Binary Variable",
-       x = "Variable",
-       y = "Count")
-
-# 6. Heatmap
-heatmap_data <- data.frame(
-  variable1 = sample(c(0, 1), 100, replace = TRUE),
-  variable2 = sample(c(0, 1), 100, replace = TRUE)
-)
-heatmap <- ggplot(heatmap_data, aes(x = factor(variable1), y = factor(variable2))) +
-  geom_tile(aes(fill = factor(variable1)), color = "white") +
-  labs(title = "Heatmap of Binary Variables",
-       x = "Variable 1",
-       y = "Variable 2",
-       fill = "Count")
-
-# 7. Violin Plot or Box Plot (Choosing one)
-violin_plot <- ggplot(binary_data, aes(x = factor(variable))) +
-  geom_violin() +
-  labs(title = "Violin Plot of Binary Variable",
-       x = "Variable",
-       y = "Count")
-
-# 8. Scatter Plot with Jitter
-scatter_plot <- ggplot(binary_data, aes(x = seq_along(variable), y = variable)) +
-  geom_jitter(width = 0.2) +
-  labs(title = "Scatter Plot with Jitter of Binary Variable",
-       x = "Index",
-       y = "Variable")
-
-# 9. Stacked Area Chart
-stacked_area_chart <- ggplot(binary_data, aes(x = seq_along(variable), fill = factor(variable))) +
-  geom_area() +
-  labs(title = "Stacked Area Chart of Binary Variable",
-       x = "Index",
-       y = "Count")
-
-
-
-
+# Make sure the title tells the story we want instead of just being a generic name
+# Remove the unnecessary labels - The title tells us everything we would have gotten from axis labels
+# Set a good theme. (Would have removed the border and background grid but I didn't know how to)
+# Use color to draw the eye to the information we want to present. We want people to notice that there is
+# Significantly more malware than not in the dataset. The exact counts don't matter so much as the proportion
+# so I also removed the counts
+# Remove all other clutter from the graph
+ggplot(graph_data, aes(x = Label, fill=Label)) + 
+  geom_bar() + 
+  ggtitle("Malware shows up more often than Non-Malware in the dataset") + 
+  ylab("") +
+  theme_bw() +
+  scale_fill_manual(values = c("grey","blue"),labels=c("Non-Malware","Malware")) +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
 
 
@@ -94,9 +49,10 @@ stacked_area_chart <- ggplot(binary_data, aes(x = seq_along(variable), fill = fa
                                   # FIRST LOOK
 
 #The first row is all NA's so we are gonna remove that
-ind_data <- my_data %>% 
-  slice(-1)
-
+# This was leftover after from when we were working in different files
+# ind_data <- my_data %>% 
+#   slice(-1)
+ind_data <- my_data
 #First a look at the number of columns in the data
 ind_data %>% 
   ncol()
