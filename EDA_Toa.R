@@ -99,7 +99,7 @@ ind_data %>%
   ggplot(aes(x = count_1))+
   geom_density(fill = 'blue')+
   theme_bw()+
-  labs(title = "Density of the counts of 1 across varaibles",
+  labs(title = "Density of the counts of 1 across variables",
       x = "Counts of 1's")
 
 #We then can compare a particular variable against the label (dependent) variable
@@ -110,6 +110,7 @@ ind_data %>%
 ind_data %>%
   group_by(Label, GET_TASKS) %>%
   summarise(count = n())
+
 
 
 #The graph below shows the same numbers as the table above but with the dependent variable along
